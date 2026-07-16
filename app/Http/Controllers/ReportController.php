@@ -14,6 +14,14 @@ class ReportController extends Controller
     public function __construct(ReportService $service)
     {
         $this->service = $service;
+
+        // Hanya Admin & Manajer Gudang yang boleh akses laporan
+        $this->middleware(function ($request, $next) {
+            if (! in_array(Auth::user()->role, ['admin', 'manajer_gudang'])) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        });
     }
 
     public function index()

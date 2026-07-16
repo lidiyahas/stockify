@@ -10,6 +10,7 @@ use App\Services\ProductService;
 use App\Exports\ProductsExport;
 use App\Imports\ProductsImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -18,10 +19,26 @@ class ProductController extends Controller
     public function __construct(ProductService $service)
     {
         $this->service = $service;
+
+        // Admin & Manajer Gudang boleh menambah produk
+        $this->middleware(function ($request, $next) {
+            if (! in_array(Auth::user()->role, ['admin', 'manajer_gudang'])) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['create', 'store']);
+
+        // Ubah, hapus, import, export data produk hanya untuk Admin
+        $this->middleware(function ($request, $next) {
+            if (Auth::user()->role !== 'admin') {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['edit', 'update', 'destroy', 'export', 'import']);
     }
 
     /**
-     * Tampilkan daftar produk
+     * Tampilkan daftar produk (semua role yang login boleh lihat)
      */
     public function index()
     {
