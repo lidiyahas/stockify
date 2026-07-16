@@ -3,15 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Product;
-use App\Models\StockTransaction;
+use App\Services\StockOpnameService;
 use Illuminate\Support\Facades\Auth;
 
 class StockOpnameController extends Controller
 {
+    private StockOpnameService $service;
+
+    public function __construct(StockOpnameService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index()
     {
-        $products = Product::all();
+        $products = $this->service->getProducts();
         return view('pages.opname.index', compact('products'));
     }
 
@@ -23,28 +29,7 @@ class StockOpnameController extends Controller
             'products.*.stock' => 'required|integer|min:0'
         ]);
 
-        foreach ($validated['products'] as $productData) {
-            $product = Product::find($productData['id']);
-
-            // Hitung stok sistem saat ini
-            $in = $product->transactions()->where('type', 'Masuk')->where('status', 'Diterima')->sum('quantity');
-            $out = $product->transactions()->where('type', 'Keluar')->where('status', 'Dikeluarkan')->sum('quantity');
-            $currentStock = $in - $out;
-
-            $selisih = $productData['stock'] - $currentStock;
-
-            if ($selisih != 0) {
-                StockTransaction::create([
-                    'product_id' => $product->id,
-                    'type' => $selisih > 0 ? 'Masuk' : 'Keluar',
-                    'quantity' => abs($selisih),
-                    'status' => $selisih > 0 ? 'Diterima' : 'Dikeluarkan',
-                    'notes' => 'Penyesuaian melalui stok opname',
-                    'user_id' => Auth::id(),
-                    'date' => now()
-                ]);
-            }
-        }
+        $this->service->applyOpname($validated['products'], Auth::id());
 
         return redirect()->route('opname.index')->with('success', 'Stock opname berhasil disimpan.');
     }

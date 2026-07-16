@@ -3,15 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\StockTransaction;
 use App\Models\Product;
+use App\Services\StockTransactionService;
 use Illuminate\Support\Facades\Auth;
 
 class StockTransactionController extends Controller
 {
+    private StockTransactionService $service;
+
+    public function __construct(StockTransactionService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index()
     {
-        $transactions = StockTransaction::with(['product', 'user'])->latest()->get();
+        $transactions = $this->service->getAll();
         return view('pages.transactions.index', compact('transactions'));
     }
 
@@ -31,59 +38,29 @@ class StockTransactionController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
-
-        // Hitung stok tersedia dari transaksi yang sudah final (bukan Pending/Ditolak)
-        $totalMasuk = StockTransaction::where('product_id', $product->id)
-            ->where('type', 'Masuk')
-            ->where('status', 'Diterima')
-            ->sum('quantity');
-
-        $totalKeluar = StockTransaction::where('product_id', $product->id)
-            ->where('type', 'Keluar')
-            ->where('status', 'Dikeluarkan')
-            ->sum('quantity');
-
-        $stokTersedia = $totalMasuk - $totalKeluar;
-
-        // Kalau tipe Keluar dan jumlahnya melebihi stok tersedia -> tolak, JANGAN disimpan
-        if ($validated['type'] === 'Keluar' && $validated['quantity'] > $stokTersedia) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'quantity' => "Stok tidak mencukupi. Stok yang tersedia hanya {$stokTersedia}."
-                ]);
+        try {
+            $this->service->create($validated, Auth::id());
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['quantity' => $e->getMessage()]);
         }
-
-        $validated['user_id'] = Auth::id();
-        $validated['date'] = now();
-
-        // Simpan transaksi HANYA jika sudah lolos validasi di atas
-        StockTransaction::create($validated);
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil disimpan');
     }
 
-    public function edit(StockTransaction $transaction)
+    public function edit(int $transaction)
     {
-        // Hanya transaksi berstatus Pending yang boleh diedit
-        if ($transaction->status !== 'Pending') {
-            return redirect()->route('transactions.index')
-                ->with('error', 'Transaksi yang sudah diproses tidak bisa diedit.');
+        try {
+            $transaction = $this->service->getEditableTransaction($transaction);
+        } catch (\Exception $e) {
+            return redirect()->route('transactions.index')->with('error', $e->getMessage());
         }
 
         $products = Product::all();
         return view('pages.transactions.edit', compact('transaction', 'products'));
     }
 
-    public function update(Request $request, StockTransaction $transaction)
+    public function update(Request $request, int $transaction)
     {
-        // Cek ulang di backend, jangan andalkan tampilan saja
-        if ($transaction->status !== 'Pending') {
-            return redirect()->route('transactions.index')
-                ->with('error', 'Transaksi yang sudah diproses tidak bisa diedit.');
-        }
-
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'type' => 'required|in:Masuk,Keluar',
@@ -92,31 +69,11 @@ class StockTransactionController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        // Kalau jenisnya Keluar dan status diubah jadi Dikeluarkan, cek stok tersedia
-        if ($validated['type'] === 'Keluar' && $validated['status'] === 'Dikeluarkan') {
-            $totalMasuk = StockTransaction::where('product_id', $validated['product_id'])
-                ->where('type', 'Masuk')
-                ->where('status', 'Diterima')
-                ->sum('quantity');
-
-            $totalKeluar = StockTransaction::where('product_id', $validated['product_id'])
-                ->where('type', 'Keluar')
-                ->where('status', 'Dikeluarkan')
-                ->where('id', '!=', $transaction->id)
-                ->sum('quantity');
-
-            $stokTersedia = $totalMasuk - $totalKeluar;
-
-            if ($validated['quantity'] > $stokTersedia) {
-                return back()
-                    ->withInput()
-                    ->withErrors([
-                        'quantity' => "Stok tidak mencukupi. Stok yang tersedia hanya {$stokTersedia}."
-                    ]);
-            }
+        try {
+            $this->service->update($transaction, $validated);
+        } catch (\Exception $e) {
+            return redirect()->route('transactions.index')->with('error', $e->getMessage());
         }
-
-        $transaction->update($validated);
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil diperbarui.');
     }

@@ -3,16 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductAttribute;
+use App\Services\ProductAttributeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProductAttributeController extends Controller
 {
+    private ProductAttributeService $service;
 
-    public function __construct()
+    public function __construct(ProductAttributeService $service)
     {
-        // Batasi akses hanya untuk admin pada fungsi tertentu
+        $this->service = $service;
+
         $this->middleware(function ($request, $next) {
             if (Auth::user()->role !== 'admin') {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
@@ -20,13 +22,10 @@ class ProductAttributeController extends Controller
             return $next($request);
         })->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
-    
+
     public function index()
     {
-        $attributes = ProductAttribute::with('product')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
+        $attributes = $this->service->getPaginated(10);
         return view('pages.attributes.index', compact('attributes'));
     }
 
@@ -38,22 +37,20 @@ class ProductAttributeController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'name'       => 'required|string|max:255',
             'value'      => 'required|string|max:255',
         ]);
 
-        ProductAttribute::create($request->only(['product_id', 'name', 'value']));
+        $this->service->create($validated);
 
-        return redirect()
-            ->route('attributes.index')
-            ->with('success', 'Atribut produk berhasil ditambahkan.');
+        return redirect()->route('attributes.index')->with('success', 'Atribut produk berhasil ditambahkan.');
     }
 
     public function edit(int $id)
     {
-        $attribute = ProductAttribute::findOrFail($id);
+        $attribute = $this->service->find($id);
         $products  = Product::all();
 
         return view('pages.attributes.edit', compact('attribute', 'products'));
@@ -61,27 +58,20 @@ class ProductAttributeController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'name'       => 'required|string|max:255',
             'value'      => 'required|string|max:255',
         ]);
 
-        $attribute = ProductAttribute::findOrFail($id);
-        $attribute->update($request->only(['product_id', 'name', 'value']));
+        $this->service->update($id, $validated);
 
-        return redirect()
-            ->route('attributes.index')
-            ->with('success', 'Atribut produk berhasil diperbarui.');
+        return redirect()->route('attributes.index')->with('success', 'Atribut produk berhasil diperbarui.');
     }
 
     public function destroy(int $id)
     {
-        $attribute = ProductAttribute::findOrFail($id);
-        $attribute->delete();
-
-        return redirect()
-            ->route('attributes.index')
-            ->with('success', 'Atribut produk berhasil dihapus.');
+        $this->service->delete($id);
+        return redirect()->route('attributes.index')->with('success', 'Atribut produk berhasil dihapus.');
     }
 }

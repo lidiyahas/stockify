@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Services\CategoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
-    public function __construct()
+    private CategoryService $service;
+
+    public function __construct(CategoryService $service)
     {
-        // Batasi akses hanya untuk admin pada fungsi tertentu
+        $this->service = $service;
+
         $this->middleware(function ($request, $next) {
             if (Auth::user()->role !== 'admin') {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
@@ -21,7 +25,7 @@ class CategoryController extends Controller
 
     public function index()
     {
-        $categories = Category::latest()->get();
+        $categories = $this->service->getAll();
         return view('pages.categories.index', compact('categories'));
     }
 
@@ -32,12 +36,12 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string'
         ]);
 
-        Category::create($request->only('name', 'description'));
+        $this->service->create($validated);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan.');
     }
@@ -49,19 +53,19 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string'
         ]);
 
-        $category->update($request->only('name', 'description'));
+        $this->service->update($category, $validated);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui.');
     }
 
     public function destroy(Category $category)
     {
-        $category->delete();
+        $this->service->delete($category);
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
     }
 }

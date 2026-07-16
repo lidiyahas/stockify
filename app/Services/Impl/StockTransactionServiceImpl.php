@@ -4,12 +4,11 @@ namespace App\Services\Impl;
 
 use App\Services\StockTransactionService;
 use App\Repositories\StockTransactionRepository;
-use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 class StockTransactionServiceImpl implements StockTransactionService
 {
-    private $repo;
+    private StockTransactionRepository $repo;
 
     public function __construct(StockTransactionRepository $repo)
     {
@@ -23,33 +22,54 @@ class StockTransactionServiceImpl implements StockTransactionService
 
     public function create(array $data, $userId)
     {
-        return DB::transaction(function () use ($data, $userId) {
-            $product = Product::findOrFail($data['product_id']);
+        // Hitung stok tersedia dari transaksi yang sudah final
+        $stokTersedia = $this->hitungStokTersedia($data['product_id']);
 
-            if ($data['type'] === 'Masuk') {
-                $product->stock += $data['quantity'];
-            } else {
-                if ($product->stock < $data['quantity']) {
-                    throw new \Exception('Stok tidak cukup');
-                }
-                $product->stock -= $data['quantity'];
-            }
-            $product->save();
+        if ($data['type'] === 'Keluar' && $data['quantity'] > $stokTersedia) {
+            throw new \Exception("Stok tidak mencukupi. Stok yang tersedia hanya {$stokTersedia}.");
+        }
 
-            return $this->repo->create([
-                'product_id' => $data['product_id'],
-                'user_id' => $userId,
-                'type' => $data['type'],
-                'quantity' => $data['quantity'],
-                'status' => $data['status'],
-                'notes' => $data['notes'] ?? null,
-                'date' => now()
-            ]);
-        });
+        $data['user_id'] = $userId;
+        $data['date'] = now();
+
+        return $this->repo->create($data);
     }
 
-    public function stockOpname()
+    public function update(int $transactionId, array $data)
     {
-        return Product::select('id','name','stock','minimum_stock')->get();
+        $transaction = $this->repo->find($transactionId);
+
+        if ($transaction->status !== 'Pending') {
+            throw new \Exception('Transaksi yang sudah diproses tidak bisa diedit.');
+        }
+
+        if ($data['type'] === 'Keluar' && $data['status'] === 'Dikeluarkan') {
+            $stokTersedia = $this->hitungStokTersedia($data['product_id'], $transactionId);
+
+            if ($data['quantity'] > $stokTersedia) {
+                throw new \Exception("Stok tidak mencukupi. Stok yang tersedia hanya {$stokTersedia}.");
+            }
+        }
+
+        return $this->repo->update($transaction, $data);
+    }
+
+    public function getEditableTransaction(int $transactionId)
+    {
+        $transaction = $this->repo->find($transactionId);
+
+        if ($transaction->status !== 'Pending') {
+            throw new \Exception('Transaksi yang sudah diproses tidak bisa diedit.');
+        }
+
+        return $transaction;
+    }
+
+    private function hitungStokTersedia(int $productId, ?int $excludeId = null): int
+    {
+        $totalMasuk = $this->repo->sumQuantity($productId, 'Masuk', 'Diterima', $excludeId);
+        $totalKeluar = $this->repo->sumQuantity($productId, 'Keluar', 'Dikeluarkan', $excludeId);
+
+        return $totalMasuk - $totalKeluar;
     }
 }

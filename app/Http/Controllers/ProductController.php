@@ -6,19 +6,26 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Supplier;
+use App\Services\ProductService;
 use App\Exports\ProductsExport;
 use App\Imports\ProductsImport;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private ProductService $service;
+
+    public function __construct(ProductService $service)
+    {
+        $this->service = $service;
+    }
+
     /**
      * Tampilkan daftar produk
      */
     public function index()
     {
-        $products = Product::with(['category', 'supplier'])->latest()->paginate(10);
+        $products = $this->service->getPaginated(10);
         return view('pages.products.index', compact('products'));
     }
 
@@ -42,7 +49,6 @@ class ProductController extends Controller
         $import = new ProductsImport;
         Excel::import($import, $request->file('file'));
 
-        // Cek apakah ada baris yang gagal (kategori/supplier tidak ditemukan, sku duplikat, dll)
         if ($import->failures()->isNotEmpty()) {
             $errorMessages = [];
 
@@ -86,11 +92,10 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products', 'public');
-            $validated['image'] = $imagePath;
+            $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
-        Product::create($validated);
+        $this->service->create($validated);
 
         return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
@@ -123,11 +128,10 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products', 'public');
-            $validated['image'] = $imagePath;
+            $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
-        $product->update($validated);
+        $this->service->update($product, $validated);
 
         return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui.');
     }
@@ -137,7 +141,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $product->delete();
+        $this->service->delete($product);
         return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
     }
 }

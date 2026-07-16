@@ -3,13 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Services\SupplierService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierController extends Controller
 {
+    private SupplierService $service;
+
+    public function __construct(SupplierService $service)
+    {
+        $this->service = $service;
+
+        // Admin & Manajer Gudang boleh lihat daftar supplier
+        $this->middleware(function ($request, $next) {
+            if (! in_array(Auth::user()->role, ['admin', 'manajer_gudang'])) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['index']);
+
+        // Hanya Admin yang boleh CRUD (tambah/ubah/hapus)
+        $this->middleware(function ($request, $next) {
+            if (Auth::user()->role !== 'admin') {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['create', 'store', 'edit', 'update', 'destroy']);
+    }
+
     public function index()
     {
-        $suppliers = Supplier::all();
+        $suppliers = $this->service->getAll();
         return view('components.manajemen_suppliers.index', compact('suppliers'));
     }
 
@@ -20,14 +45,14 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name'    => 'required|string|max:255',
             'address' => 'required|string',
             'phone'   => 'required|string|max:20',
             'email'   => 'required|email|unique:suppliers,email',
         ]);
 
-        Supplier::create($request->all());
+        $this->service->create($validated);
 
         return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil ditambahkan');
     }
@@ -36,25 +61,24 @@ class SupplierController extends Controller
     {
         return view('components.manajemen_suppliers.edit', compact('supplier'));
     }
-    
+
     public function update(Request $request, Supplier $supplier)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name'    => 'required|string|max:255',
             'address' => 'required|string',
             'phone'   => 'required|string|max:20',
             'email'   => 'required|email|unique:suppliers,email,' . $supplier->id,
         ]);
 
-        $supplier->update($request->all());
+        $this->service->update($supplier, $validated);
 
         return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil diperbarui');
     }
 
     public function destroy(Supplier $supplier)
     {
-        $supplier->delete();
-
+        $this->service->delete($supplier);
         return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil dihapus');
     }
 }

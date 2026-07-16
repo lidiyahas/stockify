@@ -3,16 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    private UserService $service;
 
-    public function __construct()
+    public function __construct(UserService $service)
     {
-        // Batasi akses hanya untuk admin pada fungsi tertentu
+        $this->service = $service;
+
         $this->middleware(function ($request, $next) {
             if (Auth::user()->role !== 'admin') {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
@@ -20,14 +22,13 @@ class UserController extends Controller
             return $next($request);
         })->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
-    
+
     public function index()
     {
-        $users = User::all();
+        $users = $this->service->getAll();
         return view('components.manajemen_pengguna.index', compact('users'));
-
     }
-    
+
     public function create()
     {
         return view('components.manajemen_pengguna.create');
@@ -35,12 +36,14 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'password' => Hash::make($request->password),
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|string|in:admin,manajer_gudang,staff_gudang',
+            'password' => 'required|string|min:8',
         ]);
+
+        $this->service->create($validated);
 
         return redirect()->route('users.index')->with('success', 'Pengguna berhasil ditambahkan.');
     }
@@ -52,27 +55,20 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'role' => 'required|string|in:admin,manajer_gudang,staff_gudang',
         ]);
 
-        $user = User::findOrFail($id);
-
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->role = $request->role;
-
-        $user->save();
+        $this->service->update($id, $validated);
 
         return redirect()->route('users.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
     public function destroy(User $user)
     {
-        $user->delete();
-
+        $this->service->delete($user);
         return redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus.');
     }
 }
