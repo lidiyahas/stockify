@@ -9,4 +9,5 @@ interface ProductService
     public function create(array $data);
     public function update($product, array $data);
     public function delete($product);
+    public function getDetail($product): array;
 }

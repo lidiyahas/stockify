@@ -28,13 +28,21 @@ class ProductController extends Controller
             return $next($request);
         })->only(['create', 'store']);
 
-        // Ubah, hapus, import, export data produk hanya untuk Admin
+        // Ubah & hapus data produk hanya untuk Admin
         $this->middleware(function ($request, $next) {
             if (Auth::user()->role !== 'admin') {
                 abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
             }
             return $next($request);
-        })->only(['edit', 'update', 'destroy', 'export', 'import']);
+        })->only(['edit', 'update', 'destroy']);
+
+        // Import & export boleh Admin & Manajer Gudang
+        $this->middleware(function ($request, $next) {
+            if (! in_array(Auth::user()->role, ['admin', 'manajer_gudang'])) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['export', 'import']);
     }
 
     /**
@@ -44,6 +52,15 @@ class ProductController extends Controller
     {
         $products = $this->service->getPaginated(10);
         return view('pages.products.index', compact('products'));
+    }
+
+    /**
+     * Detail produk (semua role yang login boleh lihat)
+     */
+    public function show(Product $product)
+    {
+        $data = $this->service->getDetail($product);
+        return view('pages.products.show', $data);
     }
 
     /**

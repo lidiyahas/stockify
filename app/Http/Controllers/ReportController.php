@@ -23,6 +23,14 @@ class ReportController extends Controller
             }
             return $next($request);
         });
+
+        // Laporan aktivitas pengguna khusus Admin
+        $this->middleware(function ($request, $next) {
+            if (Auth::user()->role !== 'admin') {
+                abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
+            }
+            return $next($request);
+        })->only(['activities']);
     }
 
     public function index()

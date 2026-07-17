@@ -14,13 +14,14 @@
     @endif
 
     <div class="flex justify-between mb-6">
-        @if(Auth::user()->role === 'admin')
+        @if(in_array(Auth::user()->role, ['admin', 'manajer_gudang']))
             <a href="{{ route('products.create') }}" 
                 class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow">
                 + Tambah Produk
             </a>
         @endif
     <div class="flex gap-2">
+        @if(in_array(Auth::user()->role, ['admin', 'manajer_gudang']))
         <a href="{{ route('products.export') }}" 
            class="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700">
            Export Excel
@@ -30,6 +31,7 @@
                 class="bg-yellow-500 text-white px-4 py-2 rounded-lg shadow hover:bg-yellow-600">
            Import Excel
         </button>
+        @endif
     </div>
 </div>
 
@@ -107,6 +109,10 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 flex items-center justify-center gap-3">
+                            <a href="{{ route('products.show', $product->id) }}" 
+                                class="text-gray-600 hover:text-gray-900 font-medium">
+                                Detail
+                            </a>
                             @if(Auth::user()->role === 'admin')
                                 <a href="{{ route('products.edit', $product->id) }}" 
                                     class="text-blue-600 hover:text-blue-800 font-medium">
@@ -120,8 +126,6 @@
                                         Hapus
                                     </button>
                                 </form>
-                            @else
-                                <span class="text-gray-400 italic">Tidak ada aksi</span>
                             @endif
                         </td>
                     </tr>

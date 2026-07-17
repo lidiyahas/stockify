@@ -11,7 +11,7 @@ class DashboardRepositoryImpl implements DashboardRepository
 {
     public function getProductsWithTransactions()
     {
-        return Product::with(['transactions' => function ($q) {
+        return Product::with(['category', 'transactions' => function ($q) {
             $q->select('product_id', 'type', 'quantity', 'status');
         }])->get();
     }
@@ -21,10 +21,10 @@ class DashboardRepositoryImpl implements DashboardRepository
         return Product::count();
     }
 
-    public function countTransactionsSince(string $type, $sinceDate): int
+    public function countTransactionsInRange(string $type, $startDate, $endDate): int
     {
         return StockTransaction::where('type', $type)
-            ->where('created_at', '>=', $sinceDate)
+            ->whereBetween('date', [$startDate, $endDate])
             ->count();
     }
 

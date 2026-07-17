@@ -2,6 +2,29 @@
 
 @section('content')
 <div class="p-4">
+
+    {{-- Filter periode transaksi (khusus Admin) --}}
+    @if(Auth::user()->role === 'admin')
+    <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-3 mb-4">
+        <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dari Tanggal</label>
+            <input type="date" name="start_date" value="{{ $periodeAwal }}"
+                   class="border border-gray-300 rounded-lg p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sampai Tanggal</label>
+            <input type="date" name="end_date" value="{{ $periodeAkhir }}"
+                   class="border border-gray-300 rounded-lg p-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        </div>
+        <button type="submit" class="px-4 py-2 bg-primary-700 text-white rounded-lg text-sm hover:bg-primary-800">
+            Terapkan
+        </button>
+        <a href="{{ route('dashboard') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+            Reset (30 Hari Terakhir)
+        </a>
+    </form>
+    @endif
+
     <!-- Ringkasan -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {{-- Hanya admin yang bisa lihat jumlah produk --}}
@@ -17,29 +40,60 @@
         @endif      
 
 
-        <!-- Transaksi Masuk -->
-        {{-- Hanya admin dan manajer gudang yang bisa lihat --}}
-        @if(Auth::user()->role === 'admin' || Auth::user()->role === 'manajer_gudang'  || Auth::user()->role === 'staff_gudang')
-        <!-- Transaksi Masuk -->
+        <!-- Transaksi Masuk/Keluar (Admin: sesuai periode yang dipilih) -->
+        @if(Auth::user()->role === 'admin')
         <div class="p-4 rounded-lg shadow text-white bg-gradient-to-r from-green-500 to-green-600 flex items-center gap-4">
             <div class="bg-white bg-opacity-20 p-3 rounded-full text-2xl">📥</div>
             <div>
-                <h3 class="text-sm font-medium">Transaksi Masuk (30 Hari)</h3>
+                <h3 class="text-sm font-medium">Transaksi Masuk ({{ \Carbon\Carbon::parse($periodeAwal)->format('d M') }} - {{ \Carbon\Carbon::parse($periodeAkhir)->format('d M Y') }})</h3>
                 <p class="mt-1 text-3xl font-bold">{{ $transaksiMasuk }}</p>
             </div>
         </div>
 
-        <!-- Transaksi Keluar -->
         <div class="p-4 rounded-lg shadow text-white bg-gradient-to-r from-red-500 to-red-600 flex items-center gap-4">
             <div class="bg-white bg-opacity-20 p-3 rounded-full text-2xl">📤</div>
             <div>
-                <h3 class="text-sm font-medium">Transaksi Keluar (30 Hari)</h3>
+                <h3 class="text-sm font-medium">Transaksi Keluar ({{ \Carbon\Carbon::parse($periodeAwal)->format('d M') }} - {{ \Carbon\Carbon::parse($periodeAkhir)->format('d M Y') }})</h3>
                 <p class="mt-1 text-3xl font-bold">{{ $transaksiKeluar }}</p>
             </div>
         </div>
         @endif
 
+        <!-- Barang Masuk/Keluar Hari Ini (khusus Manajer Gudang) -->
+        @if(Auth::user()->role === 'manajer_gudang')
+        <div class="p-4 rounded-lg shadow text-white bg-gradient-to-r from-green-500 to-green-600 flex items-center gap-4">
+            <div class="bg-white bg-opacity-20 p-3 rounded-full text-2xl">📥</div>
+            <div>
+                <h3 class="text-sm font-medium">Barang Masuk Hari Ini</h3>
+                <p class="mt-1 text-3xl font-bold">{{ $barangMasukHariIni }}</p>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-lg shadow text-white bg-gradient-to-r from-red-500 to-red-600 flex items-center gap-4">
+            <div class="bg-white bg-opacity-20 p-3 rounded-full text-2xl">📤</div>
+            <div>
+                <h3 class="text-sm font-medium">Barang Keluar Hari Ini</h3>
+                <p class="mt-1 text-3xl font-bold">{{ $barangKeluarHariIni }}</p>
+            </div>
+        </div>
+        @endif
+
     </div>
+
+    <!-- Grafik stok barang keseluruhan (khusus Admin) -->
+    @if(Auth::user()->role === 'admin')
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-4 mb-6">
+        <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">📊 Grafik Stok Barang (per Kategori)</h3>
+
+        @if($grafikStokKategori->isEmpty())
+            <p class="text-sm text-gray-500 dark:text-gray-400">Belum ada data stok untuk ditampilkan.</p>
+        @else
+            <div class="relative h-72">
+                <canvas id="stokKategoriChart"></canvas>
+            </div>
+        @endif
+    </div>
+    @endif
 
     <!-- Grafik stok barang menipis -->
     @if(Auth::user()->role === 'admin' || Auth::user()->role === 'manajer_gudang')
@@ -205,6 +259,55 @@
                         afterLabel: function(context) {
                             const item = stokData[context.dataIndex];
                             return 'Minimal: ' + item.minimum_stock;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#6b7280' },
+                    grid: { color: 'rgba(107, 114, 128, 0.1)' }
+                },
+                y: {
+                    ticks: { color: '#6b7280', precision: 0 },
+                    grid: { color: 'rgba(107, 114, 128, 0.1)' }
+                }
+            }
+        }
+    });
+</script>
+@endif
+
+@if(($grafikStokKategori ?? collect())->isNotEmpty() && Auth::user()->role === 'admin')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const kategoriData = @json($grafikStokKategori);
+
+    const ctxKategori = document.getElementById('stokKategoriChart').getContext('2d');
+    new Chart(ctxKategori, {
+        type: 'bar',
+        data: {
+            labels: kategoriData.map(item => item.category),
+            datasets: [{
+                label: 'Total Stok',
+                data: kategoriData.map(item => item.total_stock),
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1f2937',
+                    titleColor: '#fff',
+                    bodyColor: '#d1d5db',
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const item = kategoriData[context.dataIndex];
+                            return item.jumlah_produk + ' produk';
                         }
                     }
                 }
