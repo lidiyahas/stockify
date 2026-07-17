@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use App\Services\SettingService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,18 +38,21 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\App\Services\ReportService::class, \App\Services\Impl\ReportServiceImpl::class);
         $this->app->bind(\App\Repositories\ReportRepository::class, \App\Repositories\Impl\ReportRepositoryImpl::class);
+
+        $this->app->bind(\App\Services\SettingService::class, \App\Services\Impl\SettingServiceImpl::class);
+        $this->app->bind(\App\Repositories\SettingRepository::class, \App\Repositories\Impl\SettingRepositoryImpl::class);
     }
 
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(SettingService $settingService): void
     {
-        View::composer('*', function ($view) {
-        $app_name = session('app_name', 'Flowbite');
-        $app_logo = session('app_logo', 'static/images/logo.svg');
+        View::composer('*', function ($view) use ($settingService) {
+            $app_name = $settingService->getAppName();
+            $app_logo = $settingService->getAppLogo();
 
-        $view->with(compact('app_name', 'app_logo'));
-    });
+            $view->with(compact('app_name', 'app_logo'));
+        });
     }
 }
