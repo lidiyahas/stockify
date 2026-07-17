@@ -33,18 +33,24 @@
 
     <!-- Aktivitas Pengguna -->
     @if(Auth::user()->role === 'admin')
-    <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-4">
+    <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-4 mt-6">
         <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">👥 Aktivitas Pengguna Terbaru</h3>
         <ul>
-            @foreach($aktivitasPengguna as $user)
-                <li class="py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between">
-                    <span>{{ $user->name }}</span>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ $user->updated_at->diffForHumans() }}
-                    </span>
+            @forelse($aktivitasPengguna as $log)
+                <li class="py-2 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between">
+                        <span class="font-medium">{{ $log->user->name ?? 'Sistem' }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $log->created_at->diffForHumans() }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $log->description }}</p>
                 </li>
-            @endforeach
+            @empty
+                <li class="py-2 text-sm text-gray-500 dark:text-gray-400">Belum ada aktivitas tercatat.</li>
+            @endforelse
         </ul>
+        <a href="{{ route('reports.activities') }}" class="block mt-3 text-sm text-primary-700 dark:text-primary-400 hover:underline">Lihat semua aktivitas &rarr;</a>
     </div>
     @endif
 </div>

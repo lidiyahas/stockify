@@ -3,24 +3,32 @@
 namespace App\Services\Impl;
 
 use App\Services\ReportService;
+use App\Services\ActivityLogService;
 use App\Repositories\ReportRepository;
 
 class ReportServiceImpl implements ReportService
 {
     private ReportRepository $repo;
+    private ActivityLogService $activityLog;
 
-    public function __construct(ReportRepository $repo)
+    public function __construct(ReportRepository $repo, ActivityLogService $activityLog)
     {
         $this->repo = $repo;
+        $this->activityLog = $activityLog;
     }
 
     public function getDashboardActivity(string $role)
     {
         if ($role === 'admin') {
-            return $this->repo->recentUsers(5);
+            return $this->activityLog->getRecent(5);
         }
 
         return collect();
+    }
+
+    public function getActivityLog(int $perPage = 20, ?int $userId = null, ?string $subjectType = null)
+    {
+        return $this->activityLog->getPaginated($perPage, $userId, $subjectType);
     }
 
     public function getTransactionReport(?string $startDate, ?string $endDate, ?int $categoryId)

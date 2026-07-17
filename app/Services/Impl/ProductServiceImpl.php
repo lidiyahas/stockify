@@ -3,15 +3,18 @@
 namespace App\Services\Impl;
 
 use App\Services\ProductService;
+use App\Services\ActivityLogService;
 use App\Repositories\ProductRepository;
 
 class ProductServiceImpl implements ProductService
 {
     private ProductRepository $repo;
+    private ActivityLogService $activityLog;
 
-    public function __construct(ProductRepository $repo)
+    public function __construct(ProductRepository $repo, ActivityLogService $activityLog)
     {
         $this->repo = $repo;
+        $this->activityLog = $activityLog;
     }
 
     public function getPaginated(int $perPage = 10)
@@ -26,16 +29,31 @@ class ProductServiceImpl implements ProductService
 
     public function create(array $data)
     {
-        return $this->repo->create($data);
+        $product = $this->repo->create($data);
+
+        $this->activityLog->log('create', "Menambahkan produk '{$product->name}'", 'Product', $product->id);
+
+        return $product;
     }
 
     public function update($product, array $data)
     {
-        return $this->repo->update($product, $data);
+        $this->repo->update($product, $data);
+
+        $this->activityLog->log('update', "Mengubah produk '{$product->name}'", 'Product', $product->id);
+
+        return $product;
     }
 
     public function delete($product)
     {
-        return $this->repo->delete($product);
+        $name = $product->name;
+        $id = $product->id;
+
+        $result = $this->repo->delete($product);
+
+        $this->activityLog->log('delete', "Menghapus produk '{$name}'", 'Product', $id);
+
+        return $result;
     }
 }

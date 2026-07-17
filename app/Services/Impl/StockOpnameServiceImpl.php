@@ -3,6 +3,7 @@
 namespace App\Services\Impl;
 
 use App\Services\StockOpnameService;
+use App\Services\ActivityLogService;
 use App\Repositories\ProductRepository;
 use App\Repositories\StockTransactionRepository;
 
@@ -10,11 +11,13 @@ class StockOpnameServiceImpl implements StockOpnameService
 {
     private ProductRepository $productRepo;
     private StockTransactionRepository $transactionRepo;
+    private ActivityLogService $activityLog;
 
-    public function __construct(ProductRepository $productRepo, StockTransactionRepository $transactionRepo)
+    public function __construct(ProductRepository $productRepo, StockTransactionRepository $transactionRepo, ActivityLogService $activityLog)
     {
         $this->productRepo = $productRepo;
         $this->transactionRepo = $transactionRepo;
+        $this->activityLog = $activityLog;
     }
 
     public function getProducts()
@@ -37,7 +40,7 @@ class StockOpnameServiceImpl implements StockOpnameService
             $selisih = $productData['stock'] - $currentStock;
 
             if ($selisih != 0) {
-                $this->transactionRepo->create([
+                $transaction = $this->transactionRepo->create([
                     'product_id' => $product->id,
                     'type' => $selisih > 0 ? 'Masuk' : 'Keluar',
                     'quantity' => abs($selisih),
@@ -46,6 +49,15 @@ class StockOpnameServiceImpl implements StockOpnameService
                     'user_id' => $userId,
                     'date' => now(),
                 ]);
+
+                $arah = $selisih > 0 ? 'menambah' : 'mengurangi';
+                $this->activityLog->log(
+                    'opname',
+                    "Stock opname: {$arah} stok produk '{$product->name}' sebanyak " . abs($selisih) . " (sistem: {$currentStock}, fisik: {$productData['stock']})",
+                    'Product',
+                    $product->id,
+                    $userId
+                );
             }
         }
     }

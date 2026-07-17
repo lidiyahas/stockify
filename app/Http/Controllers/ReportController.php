@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Models\User;
 use App\Services\ReportService;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,6 +29,19 @@ class ReportController extends Controller
     {
         $aktivitasPengguna = $this->service->getDashboardActivity(Auth::user()->role);
         return view('pages.reports.index', compact('aktivitasPengguna'));
+    }
+
+    public function activities(Request $request)
+    {
+        $activities = $this->service->getActivityLog(
+            20,
+            $request->user_id,
+            $request->subject_type
+        );
+
+        $users = User::all();
+
+        return view('pages.reports.activities', compact('activities', 'users'));
     }
 
     public function transactions(Request $request)

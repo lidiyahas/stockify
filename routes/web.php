@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/transactions', [ReportController::class, 'transactions'])->name('reports.transactions');
     Route::get('/reports/stocks', [ReportController::class, 'stocks'])->name('reports.stocks');
+    Route::get('/reports/activities', [ReportController::class, 'activities'])->name('reports.activities');
 
     // Supplier
     Route::resource('suppliers', SupplierController::class);
@@ -74,4 +75,5 @@ Route::middleware(['auth'])->group(function () {
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'preview'])->name('settings.preview');
+    
 });

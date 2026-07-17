@@ -3,16 +3,18 @@
 namespace App\Services\Impl;
 
 use App\Services\StockTransactionService;
+use App\Services\ActivityLogService;
 use App\Repositories\StockTransactionRepository;
-use Illuminate\Support\Facades\DB;
 
 class StockTransactionServiceImpl implements StockTransactionService
 {
     private StockTransactionRepository $repo;
+    private ActivityLogService $activityLog;
 
-    public function __construct(StockTransactionRepository $repo)
+    public function __construct(StockTransactionRepository $repo, ActivityLogService $activityLog)
     {
         $this->repo = $repo;
+        $this->activityLog = $activityLog;
     }
 
     public function getAll()
@@ -32,7 +34,18 @@ class StockTransactionServiceImpl implements StockTransactionService
         $data['user_id'] = $userId;
         $data['date'] = now();
 
-        return $this->repo->create($data);
+        $transaction = $this->repo->create($data);
+
+        $jenis = $data['type'] === 'Masuk' ? 'barang masuk' : 'barang keluar';
+        $this->activityLog->log(
+            'create',
+            "Mencatat transaksi {$jenis} sebanyak {$data['quantity']} untuk produk #{$data['product_id']} (status: {$data['status']})",
+            'StockTransaction',
+            $transaction->id,
+            $userId
+        );
+
+        return $transaction;
     }
 
     public function update(int $transactionId, array $data)
@@ -51,7 +64,11 @@ class StockTransactionServiceImpl implements StockTransactionService
             }
         }
 
-        return $this->repo->update($transaction, $data);
+        $this->repo->update($transaction, $data);
+
+        $this->logStatusChange($transaction, $data['status']);
+
+        return $transaction;
     }
 
     public function getEditableTransaction(int $transactionId)
@@ -63,6 +80,19 @@ class StockTransactionServiceImpl implements StockTransactionService
         }
 
         return $transaction;
+    }
+
+    private function logStatusChange($transaction, string $newStatus): void
+    {
+        if ($newStatus === 'Diterima') {
+            $this->activityLog->log('approve', "Menyetujui transaksi barang masuk #{$transaction->id}", 'StockTransaction', $transaction->id);
+        } elseif ($newStatus === 'Dikeluarkan') {
+            $this->activityLog->log('approve', "Menyetujui transaksi barang keluar #{$transaction->id}", 'StockTransaction', $transaction->id);
+        } elseif ($newStatus === 'Ditolak') {
+            $this->activityLog->log('reject', "Menolak transaksi #{$transaction->id}", 'StockTransaction', $transaction->id);
+        } else {
+            $this->activityLog->log('update', "Mengubah transaksi #{$transaction->id}", 'StockTransaction', $transaction->id);
+        }
     }
 
     private function hitungStokTersedia(int $productId, ?int $excludeId = null): int

@@ -41,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\App\Services\SettingService::class, \App\Services\Impl\SettingServiceImpl::class);
         $this->app->bind(\App\Repositories\SettingRepository::class, \App\Repositories\Impl\SettingRepositoryImpl::class);
+
+        $this->app->bind(\App\Services\ActivityLogService::class, \App\Services\Impl\ActivityLogServiceImpl::class);
+        $this->app->bind(\App\Repositories\ActivityLogRepository::class, \App\Repositories\Impl\ActivityLogRepositoryImpl::class);
     }
 
     /**

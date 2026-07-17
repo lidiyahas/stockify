@@ -3,16 +3,19 @@
 namespace App\Services\Impl;
 
 use App\Services\DashboardService;
+use App\Services\ActivityLogService;
 use App\Repositories\DashboardRepository;
 use Carbon\Carbon;
 
 class DashboardServiceImpl implements DashboardService
 {
     private DashboardRepository $repo;
+    private ActivityLogService $activityLog;
 
-    public function __construct(DashboardRepository $repo)
+    public function __construct(DashboardRepository $repo, ActivityLogService $activityLog)
     {
         $this->repo = $repo;
+        $this->activityLog = $activityLog;
     }
 
     public function getDashboardData(string $role): array
@@ -51,7 +54,7 @@ class DashboardServiceImpl implements DashboardService
 
         if ($role === 'admin') {
             $jumlahProduk = $this->repo->countProducts();
-            $aktivitasPengguna = $this->repo->recentUsers(5);
+            $aktivitasPengguna = $this->activityLog->getRecent(5);
         }
 
         if ($role === 'staff_gudang') {
