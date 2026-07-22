@@ -1,66 +1,339 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📦 Stockify
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Stockify adalah aplikasi **manajemen persediaan barang (Inventory Management System)** berbasis web yang dikembangkan menggunakan **Laravel 10**. Sistem ini membantu perusahaan dalam mengelola stok barang, transaksi masuk dan keluar, supplier, serta menghasilkan laporan stok secara efisien.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Fitur Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- 🔐 Autentikasi Login
+- 👥 Manajemen Pengguna (Admin, Manager, Staff)
+- 📦 Manajemen Produk
+- 🏷️ Manajemen Kategori
+- 🚚 Manajemen Supplier
+- 📥 Transaksi Barang Masuk
+- 📤 Transaksi Barang Keluar
+- 📊 Dashboard Statistik
+- 📑 Laporan Transaksi
+- 📈 Monitoring Stok
+- 📥 Import Data Produk melalui Excel
+- 📤 Export Data Produk ke Excel
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🛠️ Teknologi yang Digunakan
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Backend
+- Laravel 10
+- PHP 8.x
+- Eloquent ORM
+- Repository Pattern
+- Service Layer
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Frontend
+- Blade Template
+- Tailwind CSS
+- Flowbite
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Database
+- MySQL
 
-## Laravel Sponsors
+### Package
+- Laravel Excel (Maatwebsite)
+- Carbon
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+---
 
-### Premium Partners
+# 🏛️ Arsitektur Sistem
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+Aplikasi menerapkan **Layered Architecture** dengan pemisahan tanggung jawab pada setiap layer.
 
-## Contributing
+```
+User
+   │
+   ▼
+Routes
+   │
+   ▼
+Controller
+   │
+   ▼
+Service
+   │
+   ▼
+Repository
+   │
+   ▼
+Model (Eloquent)
+   │
+   ▼
+MySQL Database
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Penjelasan
 
-## Code of Conduct
+- **Route**
+  - Menerima request dari pengguna.
+  - Mengarahkan request ke Controller.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **Controller**
+  - Mengelola request dan response.
+  - Memanggil Service untuk menjalankan logika bisnis.
 
-## Security Vulnerabilities
+- **Service**
+  - Berisi seluruh business logic aplikasi.
+  - Melakukan validasi data sebelum diproses.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **Repository**
+  - Bertanggung jawab terhadap akses database.
+  - Menggunakan Eloquent ORM.
 
-## License
+- **Model**
+  - Representasi tabel database.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **View**
+  - Menampilkan data kepada pengguna menggunakan Blade.
+
+---
+
+# 🔄 Alur Sistem
+
+## Login
+
+```
+User
+    │
+Input Email & Password
+    │
+Controller
+    │
+Authentication
+    │
+Dashboard
+```
+
+---
+
+## Transaksi Barang
+
+```
+User
+    │
+Membuat Transaksi
+    │
+Controller
+    │
+Service
+    │
+Validasi Stok
+    │
+Repository
+    │
+Database
+    │
+Update Stok Produk
+```
+
+---
+
+## 📂 Struktur Folder
+
+```
+app/
+ ├── Http/
+ │    └── Controllers/
+ │
+ ├── Models/
+ │
+ ├── Services/
+ │
+ ├── Repositories/
+ │
+ └── Providers/
+
+resources/
+ ├── views/
+ ├── css/
+ └── js/
+
+routes/
+ └── web.php
+
+database/
+ ├── migrations/
+ └── seeders/
+
+public/
+
+storage/
+```
+
+---
+
+# 🗃️ Database
+
+Tabel utama yang digunakan:
+
+- users
+- products
+- categories
+- suppliers
+- stock_transactions
+
+Relasi database:
+
+```
+Category
+      │
+      ▼
+   Product
+      │
+      ▼
+Stock Transaction
+      ▲
+      │
+     User
+
+Supplier
+      │
+      ▼
+Product
+```
+
+---
+
+# 🚀 Instalasi
+
+Clone repository
+
+```bash
+git clone https://github.com/username/stockify.git
+```
+
+Masuk ke folder project
+
+```bash
+cd stockify
+```
+
+Install dependency
+
+```bash
+composer install
+```
+
+Copy file environment
+
+```bash
+cp .env.example .env
+```
+
+Generate application key
+
+```bash
+php artisan key:generate
+```
+
+Konfigurasi database pada file `.env`
+
+```env
+DB_DATABASE=stockify
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Jalankan migration
+
+```bash
+php artisan migrate
+```
+
+Jika tersedia seeder
+
+```bash
+php artisan db:seed
+```
+
+Jalankan aplikasi
+
+```bash
+php artisan serve
+```
+
+Akses aplikasi melalui
+
+```
+http://127.0.0.1:8000
+```
+
+---
+
+# 👥 Hak Akses
+
+## Admin
+
+- Mengelola User
+- Mengelola Produk
+- Mengelola Supplier
+- Mengelola Kategori
+- Mengelola Transaksi
+- Import & Export Excel
+- Melihat Laporan
+
+---
+
+## Manager
+
+- Melihat Dashboard
+- Mengelola Transaksi
+- Melihat Laporan
+- Monitoring Stok
+
+---
+
+## Staff
+
+- Melihat Dashboard
+- Input Barang Masuk
+- Input Barang Keluar
+- Melihat Produk
+
+---
+
+# 📸 Tampilan Sistem
+
+Berikut halaman utama sistem:
+
+- Login
+- Dashboard
+- Produk
+- Supplier
+- Transaksi Barang
+- Laporan
+
+*(Tambahkan screenshot pada folder `docs/images` atau `screenshots` jika tersedia.)*
+
+---
+
+# 📌 Keunggulan
+
+- Menggunakan Laravel Framework
+- Struktur kode lebih rapi dengan Service & Repository Pattern
+- Responsive UI menggunakan Tailwind CSS
+- Import dan Export Excel
+- Dashboard informatif
+- Menggunakan Eloquent ORM
+- Mudah dikembangkan
+
+---
+
+# 👨‍💻 Tim Pengembang
+
+- **Ldy**
+- **FS**
+
+---
+
+# 📄 Lisensi
+
+Project ini dibuat untuk keperluan pembelajaran dan program magang.
