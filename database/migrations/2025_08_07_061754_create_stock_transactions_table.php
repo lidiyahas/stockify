@@ -18,9 +18,9 @@ return new class extends Migration
             $table->integer('quantity');
             $table->date('date');
 
-            $table->enum('status', ['Pending', 'Disetujui', 'Ditolak'])->default('Pending');
+            $table->enum('status', ['Pending', 'Diterima', 'Ditolak', 'Dikeluarkan'])->default('Pending');
             $table->foreignId('approved_by')->nullable()->constrained('users');
-            $table->text('reason')->nullable();
+            $table->text('notes')->nullable();
 
             $table->timestamps();
         });

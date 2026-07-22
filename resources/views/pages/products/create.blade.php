@@ -64,7 +64,7 @@
 
             {{-- Stok Minimum --}}
             <div>
-                <label class="block font-semibold mb-2 text-gray-700">Stok</label>
+                <label class="block font-semibold mb-2 text-gray-700">Stok Minimum</label>
                 <input type="number" name="minimum_stock" value="{{ old('minimum_stock', 0) }}"
                     class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="0" placeholder="Minimal stok untuk status aman" required>
