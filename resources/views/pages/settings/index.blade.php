@@ -29,6 +29,7 @@
             {{-- Tampilkan preview logo --}}
             <div class="mb-3">
                 <img 
+                    id="logo-preview"
                     src="{{ $app_logo }}" 
                     alt="Logo" 
                     class="h-20 object-contain border rounded"
@@ -56,4 +57,20 @@
         </button>
     </form>
 </div>
+
+<script>
+    const logoInput = document.getElementById('logo');
+    const logoPreview = document.getElementById('logo-preview');
+
+    logoInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            logoPreview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
 @endsection
